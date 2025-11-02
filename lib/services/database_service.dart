@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/task.dart';
 
 class DatabaseService {
@@ -10,15 +12,21 @@ class DatabaseService {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('tasks.db');
+
+    if (kIsWeb) {
+      // No web, usar DB na memória / IndexedDB
+      _database = await openDatabase(
+        'tasks_web.db',
+        version: 1,
+        onCreate: _createDB,
+      );
+    } else {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'tasks.db');
+      _database = await openDatabase(path, version: 1, onCreate: _createDB);
+    }
+
     return _database!;
-  }
-
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-
-    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future<void> _createDB(Database db, int version) async {
