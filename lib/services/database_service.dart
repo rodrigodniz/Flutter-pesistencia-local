@@ -1,7 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/task.dart';
 
 class DatabaseService {
@@ -12,21 +10,20 @@ class DatabaseService {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-
-    if (kIsWeb) {
-      // No web, usar DB na memória / IndexedDB
-      _database = await openDatabase(
-        'tasks_web.db',
-        version: 1,
-        onCreate: _createDB,
-      );
-    } else {
-      final dbPath = await getDatabasesPath();
-      final path = join(dbPath, 'tasks.db');
-      _database = await openDatabase(path, version: 1, onCreate: _createDB);
-    }
-
+    _database = await _initDB('tasks.db');
     return _database!;
+  }
+
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, filePath);
+
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -37,9 +34,16 @@ class DatabaseService {
         description TEXT,
         completed INTEGER NOT NULL,
         priority TEXT NOT NULL,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        dueDate TEXT
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE tasks ADD COLUMN dueDate TEXT');
+    }
   }
 
   Future<Task> create(Task task) async {
@@ -51,7 +55,6 @@ class DatabaseService {
   Future<Task?> read(String id) async {
     final db = await database;
     final maps = await db.query('tasks', where: 'id = ?', whereArgs: [id]);
-
     if (maps.isNotEmpty) {
       return Task.fromMap(maps.first);
     }

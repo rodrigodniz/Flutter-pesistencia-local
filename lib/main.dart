@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
-import 'package:sqflite/sqflite.dart';
 import 'screens/task_list_screen.dart';
 
 void main() {
-  databaseFactory = databaseFactoryFfiWeb;
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -27,6 +25,7 @@ class MyApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
+          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(
@@ -34,6 +33,23 @@ class MyApp extends StatelessWidget {
           ),
           filled: true,
           fillColor: Color(0xFFF5F5F5),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          bodyMedium: TextStyle(fontSize: 16),
         ),
       ),
       home: const TaskListScreen(),
