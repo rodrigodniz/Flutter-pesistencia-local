@@ -4,6 +4,8 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../screens/camera_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 
 class CameraService {
   static final CameraService instance = CameraService._init();
@@ -75,6 +77,27 @@ class CameraService {
     }
   }
 
+  Future<String?> pickFromGallery(BuildContext context) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image == null) return null;
+
+      final savedPath = await savePicture(image);
+      return savedPath;
+    } catch (e) {
+      print('❌ Erro ao selecionar da galeria: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao selecionar imagem: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+  }
+
   Future<String> savePicture(XFile image) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
@@ -107,5 +130,31 @@ class CameraService {
       print('❌ Erro ao deletar foto: $e');
       return false;
     }
+  }
+
+  Future<String> applyFilter(String imagePath, String filter) async {
+    final file = File(imagePath);
+    final bytes = await file.readAsBytes();
+    final original = img.decodeImage(bytes);
+
+    if (original == null) return imagePath;
+
+    img.Image filtered;
+
+    switch (filter) {
+      case 'grayscale':
+        filtered = img.grayscale(original);
+        break;
+      case 'sepia':
+        filtered = img.sepia(original);
+        break;
+      default:
+        return imagePath;
+    }
+
+    final filteredBytes = img.encodeJpg(filtered);
+    final newPath = imagePath.replaceAll('.jpg', '_$filter.jpg');
+    await File(newPath).writeAsBytes(filteredBytes);
+    return newPath;
   }
 }

@@ -24,7 +24,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   bool _completed = false;
   bool _isLoading = false;
 
-  // CÂMERA
+  // CÂMERA / GALERIA
   String? _photoPath;
 
   // GPS
@@ -55,13 +55,13 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
-  // CÂMERA METHODS
+  // 📸 CÂMERA METHODS
   Future<void> _takePicture() async {
     final photoPath = await CameraService.instance.takePicture(context);
 
     if (photoPath != null && mounted) {
       setState(() => _photoPath = photoPath);
-
+      _showFilterOptions();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('📷 Foto capturada!'),
@@ -70,6 +70,65 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final photoPath = await CameraService.instance.pickFromGallery(context);
+
+    if (photoPath != null && mounted) {
+      setState(() => _photoPath = photoPath);
+      _showFilterOptions();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📁 Foto selecionada da galeria!'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showFilterOptions() {
+    if (_photoPath == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text('Aplicar Filtro na Foto'),
+              tileColor: Colors.grey,
+            ),
+            ListTile(
+              leading: const Icon(Icons.filter_b_and_w),
+              title: const Text('Preto e Branco'),
+              onTap: () async {
+                final newPath = await CameraService.instance.applyFilter(
+                  _photoPath!,
+                  'grayscale',
+                );
+                setState(() => _photoPath = newPath);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.filter_vintage),
+              title: const Text('Sépia'),
+              onTap: () async {
+                final newPath = await CameraService.instance.applyFilter(
+                  _photoPath!,
+                  'sepia',
+                );
+                setState(() => _photoPath = newPath);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _removePhoto() {
@@ -98,7 +157,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     );
   }
 
-  // GPS METHODS
+  // 📍 GPS METHODS
   void _showLocationPicker() {
     showModalBottomSheet(
       context: context,
@@ -137,6 +196,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     ).showSnackBar(const SnackBar(content: Text('📍 Localização removida')));
   }
 
+  // 💾 SALVAR
   Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -144,7 +204,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
     try {
       if (widget.task == null) {
-        // CRIAR
         final newTask = Task(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -156,7 +215,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           locationName: _locationName,
         );
         await DatabaseService.instance.create(newTask);
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -166,7 +224,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           );
         }
       } else {
-        // ATUALIZAR
         final updatedTask = widget.task!.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -178,7 +235,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           locationName: _locationName,
         );
         await DatabaseService.instance.update(updatedTask);
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -229,7 +285,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         prefixIcon: Icon(Icons.title),
                         border: OutlineInputBorder(),
                       ),
-                      textCapitalization: TextCapitalization.sentences,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Digite um título';
@@ -241,7 +296,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       },
                       maxLength: 100,
                     ),
-
                     const SizedBox(height: 16),
 
                     // DESCRIÇÃO
@@ -249,16 +303,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       controller: _descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Descrição',
-                        hintText: 'Detalhes...',
                         prefixIcon: Icon(Icons.description),
                         border: OutlineInputBorder(),
-                        alignLabelWithHint: true,
                       ),
                       maxLines: 4,
                       maxLength: 500,
-                      textCapitalization: TextCapitalization.sentences,
                     ),
-
                     const SizedBox(height: 16),
 
                     // PRIORIDADE
@@ -285,10 +335,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         if (value != null) setState(() => _priority = value);
                       },
                     ),
-
                     const SizedBox(height: 24),
 
-                    // SWITCH COMPLETA
+                    // COMPLETA
                     SwitchListTile(
                       title: const Text('Tarefa Completa'),
                       subtitle: Text(_completed ? 'Sim' : 'Não'),
@@ -305,7 +354,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
                     const Divider(height: 32),
 
-                    // SEÇÃO FOTO
+                    // FOTO
                     Row(
                       children: [
                         const Icon(Icons.photo_camera, color: Colors.blue),
@@ -329,7 +378,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                           ),
                       ],
                     ),
-
                     const SizedBox(height: 12),
 
                     if (_photoPath != null)
@@ -358,18 +406,29 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         ),
                       )
                     else
-                      OutlinedButton.icon(
-                        onPressed: _takePicture,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Tirar Foto'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.all(16),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _takePicture,
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Câmera'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _pickFromGallery,
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Galeria'),
+                            ),
+                          ),
+                        ],
                       ),
 
                     const Divider(height: 32),
 
-                    // SEÇÃO LOCALIZAÇÃO
+                    // LOCALIZAÇÃO
                     Row(
                       children: [
                         const Icon(Icons.location_on, color: Colors.blue),
@@ -393,7 +452,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                           ),
                       ],
                     ),
-
                     const SizedBox(height: 12),
 
                     if (_latitude != null && _longitude != null)
@@ -421,14 +479,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         onPressed: _showLocationPicker,
                         icon: const Icon(Icons.add_location),
                         label: const Text('Adicionar Localização'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.all(16),
-                        ),
                       ),
 
                     const SizedBox(height: 32),
 
-                    // BOTÃO SALVAR
+                    // SALVAR
                     ElevatedButton.icon(
                       onPressed: _isLoading ? null : _saveTask,
                       icon: const Icon(Icons.save),
