@@ -117,7 +117,7 @@ class DatabaseService {
     return allTasks.where((task) {
       if (!task.hasLocation) return false;
 
-      // Cálculo de distância usando fórmula de Haversine (simplificada)
+      // Cálculo de distância simples em metros (aproximação)
       final latDiff = (task.latitude! - latitude).abs();
       final lonDiff = (task.longitude! - longitude).abs();
       final distance = ((latDiff * 111000) + (lonDiff * 111000)) / 2;
