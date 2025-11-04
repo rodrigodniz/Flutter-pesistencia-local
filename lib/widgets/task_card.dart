@@ -1,165 +1,335 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import '../models/task.dart';
+import '../services/location_service.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback onTap;
-  final VoidCallback onToggle;
   final VoidCallback onDelete;
+  final Function(bool?) onCheckboxChanged;
 
   const TaskCard({
     super.key,
     required this.task,
     required this.onTap,
-    required this.onToggle,
     required this.onDelete,
+    required this.onCheckboxChanged,
   });
 
-  String _shareMessage() {
-    final b = StringBuffer();
-    b.writeln('Tarefa: ${task.title}');
-    if (task.description.isNotEmpty)
-      b.writeln('Descrição: ${task.description}');
-    b.writeln('Prioridade: ${task.priority}');
-    b.writeln(
-      'Criada em: ${DateFormat('dd/MM/yyyy HH:mm').format(task.createdAt)}',
-    );
-    if (task.dueDate != null) {
-      b.writeln(
-        'Vencimento: ${DateFormat('dd/MM/yyyy').format(task.dueDate!)}',
-      );
-    }
-    b.writeln(task.completed ? 'Status: Concluída' : 'Status: Pendente');
-    return b.toString();
-  }
-
-  Color _priorityColor() {
+  Color _getPriorityColor() {
     switch (task.priority) {
+      case 'urgent':
+        return Colors.red;
+      case 'high':
+        return Colors.orange;
+      case 'medium':
+        return Colors.amber;
       case 'low':
         return Colors.green;
-      case 'medium':
-        return Colors.orange;
-      case 'high':
-        return Colors.red;
-      case 'urgent':
-        return Colors.purple;
       default:
         return Colors.grey;
     }
   }
 
+  IconData _getPriorityIcon() {
+    switch (task.priority) {
+      case 'urgent':
+        return Icons.priority_high;
+      case 'high':
+        return Icons.arrow_upward;
+      case 'medium':
+        return Icons.remove;
+      case 'low':
+        return Icons.arrow_downward;
+      default:
+        return Icons.flag;
+    }
+  }
+
+  String _getPriorityLabel() {
+    switch (task.priority) {
+      case 'urgent':
+        return 'Urgente';
+      case 'high':
+        return 'Alta';
+      case 'medium':
+        return 'Média';
+      case 'low':
+        return 'Baixa';
+      default:
+        return 'Normal';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final df = DateFormat('dd/MM/yyyy HH:mm');
+    final priorityColor = _getPriorityColor();
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: _priorityColor(), width: 2),
+        side: BorderSide(
+          color: task.completed
+              ? Colors.grey.shade300
+              : priorityColor.withOpacity(0.3),
+          width: 2,
+        ),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Checkbox(value: task.completed, onChanged: (_) => onToggle()),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        decoration: task.completed
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: task.completed ? Colors.grey : Colors.black,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (task.description.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        task.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          decoration: task.completed
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: task.completed
-                              ? Colors.grey
-                              : Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 6),
-                    Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: task.completed,
+                    onChanged: onCheckboxChanged,
+                    activeColor: Colors.green,
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 3),
                         Text(
-                          df.format(task.createdAt),
+                          task.title,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            decoration: task.completed
+                                ? TextDecoration.lineThrough
+                                : null,
+                            color: task.completed
+                                ? Colors.grey
+                                : Colors.black87,
                           ),
                         ),
-                        if (task.dueDate != null) ...[
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.event,
-                            size: 14,
-                            color: task.dueDate!.isBefore(DateTime.now())
-                                ? Colors.red
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 3),
+
+                        if (task.description.isNotEmpty) ...[
+                          const SizedBox(height: 4),
                           Text(
-                            DateFormat('dd/MM/yyyy').format(task.dueDate!),
+                            task.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: task.dueDate!.isBefore(DateTime.now())
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: task.dueDate!.isBefore(DateTime.now())
-                                  ? Colors.red
-                                  : Colors.grey,
+                              fontSize: 14,
+                              color: task.completed
+                                  ? Colors.grey
+                                  : Colors.black54,
                             ),
                           ),
                         ],
+
+                        const SizedBox(height: 8),
+
+                        // BADGES
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            // Prioridade
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: priorityColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: priorityColor.withOpacity(0.5),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getPriorityIcon(),
+                                    size: 14,
+                                    color: priorityColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _getPriorityLabel(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: priorityColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Foto
+                            if (task.hasPhoto)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.blue.withOpacity(0.5),
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.photo_camera,
+                                      size: 14,
+                                      color: Colors.blue,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Foto',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            // Localização
+                            if (task.hasLocation)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.purple.withOpacity(0.5),
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      size: 14,
+                                      color: Colors.purple,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Local',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.purple,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            // Shake
+                            if (task.completed && task.wasCompletedByShake)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.green.withOpacity(0.5),
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.vibration,
+                                      size: 14,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Shake',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
+
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    color: Colors.red,
+                    tooltip: 'Deletar',
+                  ),
+                ],
+              ),
+            ),
+
+            // PREVIEW DA FOTO
+            if (task.hasPhoto)
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+                child: Image.file(
+                  File(task.photoPath!),
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 180,
+                      color: Colors.grey[200],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.broken_image_outlined,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Foto não encontrada',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () => Share.share(_shareMessage()),
-                icon: const Icon(Icons.share),
-                color: Colors.blue,
-              ),
-              IconButton(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline),
-                color: Colors.red,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
