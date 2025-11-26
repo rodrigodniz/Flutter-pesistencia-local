@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:vibration/vibration.dart';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
 
 class SensorService {
   static final SensorService instance = SensorService._init();
@@ -61,9 +61,10 @@ class SensorService {
 
   Future<void> _vibrateDevice() async {
     try {
-      final hasVibrator = await Vibration.hasVibrator();
-      if (hasVibrator == true) {
-        await Vibration.vibrate(duration: 100);
+      final canVibrate = await Vibrate.canVibrate;
+      if (canVibrate) {
+        // Vibração curta, estilo "toque de sucesso"
+        Vibrate.feedback(FeedbackType.success);
       }
     } catch (e) {
       print('⚠️ Vibração não suportada: $e');
