@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+
 import '../models/task.dart';
-import '../services/location_service.dart';
+import '../services/connectivity_service.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
@@ -39,7 +40,7 @@ class TaskCard extends StatelessWidget {
       case 'high':
         return Icons.arrow_upward;
       case 'medium':
-        return Icons.remove;
+        return Icons.horizontal_rule;
       case 'low':
         return Icons.arrow_downward;
       default:
@@ -60,6 +61,54 @@ class TaskCard extends StatelessWidget {
       default:
         return 'Normal';
     }
+  }
+
+  Widget _badge({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncBadge() {
+    final online = ConnectivityService.instance.isOnline;
+
+    if (task.isSynced) {
+      return _badge(
+        icon: Icons.check_circle,
+        text: 'Sync',
+        color: Colors.green,
+      );
+    }
+
+    return _badge(
+      icon: online ? Icons.sync : Icons.cloud_off,
+      text: online ? 'A sincronizar' : 'Offline',
+      color: online ? Colors.blue : Colors.red,
+    );
   }
 
   @override
@@ -94,9 +143,7 @@ class TaskCard extends StatelessWidget {
                     onChanged: onCheckboxChanged,
                     activeColor: Colors.green,
                   ),
-
                   const SizedBox(width: 8),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +161,6 @@ class TaskCard extends StatelessWidget {
                                 : Colors.black87,
                           ),
                         ),
-
                         if (task.description.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
@@ -129,158 +175,40 @@ class TaskCard extends StatelessWidget {
                             ),
                           ),
                         ],
-
                         const SizedBox(height: 8),
-
-                        // BADGES
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            // Prioridade
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: priorityColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: priorityColor.withOpacity(0.5),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getPriorityIcon(),
-                                    size: 14,
-                                    color: priorityColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _getPriorityLabel(),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: priorityColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            _badge(
+                              icon: _getPriorityIcon(),
+                              text: _getPriorityLabel(),
+                              color: priorityColor,
                             ),
-
-                            // Foto
                             if (task.hasPhoto)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.blue.withOpacity(0.5),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.photo_camera,
-                                      size: 14,
-                                      color: Colors.blue,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Foto',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _badge(
+                                icon: Icons.photo_camera,
+                                text: 'Foto',
+                                color: Colors.blue,
                               ),
-
-                            // Localização
                             if (task.hasLocation)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.purple.withOpacity(0.5),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      size: 14,
-                                      color: Colors.purple,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Local',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.purple,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _badge(
+                                icon: Icons.location_on,
+                                text: 'Local',
+                                color: Colors.purple,
                               ),
-
-                            // Shake
                             if (task.completed && task.wasCompletedByShake)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.green.withOpacity(0.5),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.vibration,
-                                      size: 14,
-                                      color: Colors.green,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Shake',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              _badge(
+                                icon: Icons.vibration,
+                                text: 'Shake',
+                                color: Colors.green,
                               ),
+                            _buildSyncBadge(),
                           ],
                         ),
                       ],
                     ),
                   ),
-
                   IconButton(
                     onPressed: onDelete,
                     icon: const Icon(Icons.delete_outline),
@@ -290,8 +218,6 @@ class TaskCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // PREVIEW DA FOTO
             if (task.hasPhoto)
               ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -303,28 +229,12 @@ class TaskCard extends StatelessWidget {
                   width: double.infinity,
                   height: 180,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
+                  errorBuilder: (_, __, ___) {
                     return Container(
                       height: 180,
                       color: Colors.grey[200],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image_outlined,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Foto não encontrada',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                      alignment: Alignment.center,
+                      child: const Text('Foto não encontrada'),
                     );
                   },
                 ),

@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../models/task.dart';
 
 class DatabaseService {
-  static final DatabaseService instance = DatabaseService._init();
-  static Database? _database;
+  DatabaseService._internal();
+  static final DatabaseService instance = DatabaseService._internal();
 
-  DatabaseService._init();
+  static Database? _database;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -19,80 +20,59 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
+    return openDatabase(
       path,
-      version: 4, // VERSÃO FINAL COM TODOS OS CAMPOS
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
-    const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
-    const textType = 'TEXT NOT NULL';
-    const intType = 'INTEGER NOT NULL';
-
     await db.execute('''
       CREATE TABLE tasks (
-        id $idType,
-        title $textType,
-        description $textType,
-        priority $textType,
-        completed $intType,
-        createdAt $textType,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        priority TEXT NOT NULL,
+        completed INTEGER NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
         photoPath TEXT,
         completedAt TEXT,
         completedBy TEXT,
         latitude REAL,
         longitude REAL,
-        locationName TEXT
+        locationName TEXT,
+        isSynced INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Migração incremental para cada versão
-    if (oldVersion < 2) {
-      await db.execute('ALTER TABLE tasks ADD COLUMN photoPath TEXT');
+    // Versões antigas podem não ter updatedAt/isSynced
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE tasks ADD COLUMN updatedAt TEXT');
+      await db.execute(
+        'ALTER TABLE tasks ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'UPDATE tasks SET updatedAt = createdAt WHERE updatedAt IS NULL',
+      );
     }
-    if (oldVersion < 3) {
-      await db.execute('ALTER TABLE tasks ADD COLUMN completedAt TEXT');
-      await db.execute('ALTER TABLE tasks ADD COLUMN completedBy TEXT');
-    }
-    if (oldVersion < 4) {
-      await db.execute('ALTER TABLE tasks ADD COLUMN latitude REAL');
-      await db.execute('ALTER TABLE tasks ADD COLUMN longitude REAL');
-      await db.execute('ALTER TABLE tasks ADD COLUMN locationName TEXT');
-    }
-    print('✅ Banco migrado de v$oldVersion para v$newVersion');
   }
 
-  // CRUD Methods
-  Future<Task> create(Task task) async {
-    final db = await instance.database;
+  // ------------------------------------------------------------
+  // CRUD BÁSICO
+  // ------------------------------------------------------------
+  Future<Task> insertTask(Task task) async {
+    final db = await database;
     final id = await db.insert('tasks', task.toMap());
     return task.copyWith(id: id);
   }
 
-  Future<Task?> read(int id) async {
-    final db = await instance.database;
-    final maps = await db.query('tasks', where: 'id = ?', whereArgs: [id]);
-
-    if (maps.isNotEmpty) {
-      return Task.fromMap(maps.first);
-    }
-    return null;
-  }
-
-  Future<List<Task>> readAll() async {
-    final db = await instance.database;
-    const orderBy = 'createdAt DESC';
-    final result = await db.query('tasks', orderBy: orderBy);
-    return result.map((json) => Task.fromMap(json)).toList();
-  }
-
-  Future<int> update(Task task) async {
-    final db = await instance.database;
+  Future<int> updateTask(Task task) async {
+    final db = await database;
     return db.update(
       'tasks',
       task.toMap(),
@@ -101,33 +81,32 @@ class DatabaseService {
     );
   }
 
-  Future<int> delete(int id) async {
-    final db = await instance.database;
-    return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
+  Future<int> deleteTask(int id) async {
+    final db = await database;
+    return db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Método especial: buscar tarefas por proximidade
-  Future<List<Task>> getTasksNearLocation({
-    required double latitude,
-    required double longitude,
-    double radiusInMeters = 1000,
-  }) async {
-    final allTasks = await readAll();
-
-    return allTasks.where((task) {
-      if (!task.hasLocation) return false;
-
-      // Cálculo de distância simples em metros (aproximação)
-      final latDiff = (task.latitude! - latitude).abs();
-      final lonDiff = (task.longitude! - longitude).abs();
-      final distance = ((latDiff * 111000) + (lonDiff * 111000)) / 2;
-
-      return distance <= radiusInMeters;
-    }).toList();
+  Future<List<Task>> readAll() async {
+    final db = await database;
+    final result = await db.query('tasks', orderBy: 'createdAt DESC');
+    return result.map((e) => Task.fromMap(e)).toList();
   }
 
-  Future close() async {
-    final db = await instance.database;
-    db.close();
+  // ------------------------------------------------------------
+  // MARCAR COMO SINCRONIZADO
+  // ------------------------------------------------------------
+  Future<void> markSynced(int id) async {
+    final db = await database;
+    await db.update('tasks', {'isSynced': 1}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> markAllSynced() async {
+    final db = await database;
+    await db.update('tasks', {'isSynced': 1});
+  }
+
+  Future<void> close() async {
+    final db = await database;
+    await db.close();
   }
 }
