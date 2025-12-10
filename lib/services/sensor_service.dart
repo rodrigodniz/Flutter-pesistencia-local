@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
 
 class SensorService {
   static final SensorService instance = SensorService._init();
@@ -20,7 +21,7 @@ class SensorService {
 
   void startShakeDetection(Function() onShake) {
     if (_isActive) {
-      print('⚠️ Detecção já ativa');
+      print('⚠️ Detecção de shake já ativa');
       return;
     }
 
@@ -61,13 +62,10 @@ class SensorService {
 
   Future<void> _vibrateDevice() async {
     try {
-      final canVibrate = await Vibrate.canVibrate;
-      if (canVibrate) {
-        // Vibração curta, estilo "toque de sucesso"
-        Vibrate.feedback(FeedbackType.success);
-      }
+      // Usa o sistema de feedback háptico nativo do Flutter
+      await HapticFeedback.mediumImpact();
     } catch (e) {
-      print('⚠️ Vibração não suportada: $e');
+      print('⚠️ Vibração/Haptic não suportado: $e');
     }
   }
 
