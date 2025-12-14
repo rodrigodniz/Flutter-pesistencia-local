@@ -1,10 +1,3 @@
-# ================================
-# Etapa 3 - Script de Evidências (Professor-friendly)
-# Windows PowerShell / PowerShell 7
-# Requisitos: Docker Desktop + Node.js
-# ================================
-
-# Ajustes de encoding (evita caracteres quebrados em vários ambientes)
 try {
   chcp 65001 | Out-Null
 } catch {}
