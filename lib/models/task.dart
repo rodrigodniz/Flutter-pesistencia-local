@@ -5,11 +5,14 @@ class Task {
   final String priority;
   final bool completed;
 
+  // Câmera (local)
+  final String? photoPath;
+
+  // S3 (novo - URL do objeto salvo no LocalStack)
+  final String? imageUrl;
+
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  // Câmera
-  final String? photoPath;
 
   // Sensores (shake)
   final DateTime? completedAt;
@@ -32,6 +35,7 @@ class Task {
     DateTime? createdAt,
     DateTime? updatedAt,
     this.photoPath,
+    this.imageUrl, // <-- NOVO
     this.completedAt,
     this.completedBy,
     this.latitude,
@@ -41,8 +45,8 @@ class Task {
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? createdAt ?? DateTime.now();
 
-  // Getters auxiliares
   bool get hasPhoto => photoPath != null && photoPath!.isNotEmpty;
+  bool get hasImageUrl => imageUrl != null && imageUrl!.isNotEmpty;
   bool get hasLocation => latitude != null && longitude != null;
   bool get wasCompletedByShake => completedBy == 'shake';
 
@@ -56,6 +60,7 @@ class Task {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'photoPath': photoPath,
+      'imageUrl': imageUrl, // <-- NOVO
       'completedAt': completedAt?.toIso8601String(),
       'completedBy': completedBy,
       'latitude': latitude,
@@ -86,6 +91,7 @@ class Task {
       createdAt: created,
       updatedAt: updated,
       photoPath: map['photoPath'] as String?,
+      imageUrl: map['imageUrl'] as String?, // <-- NOVO
       completedAt: map['completedAt'] != null
           ? DateTime.parse(map['completedAt'] as String)
           : null,
@@ -106,6 +112,7 @@ class Task {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? photoPath,
+    String? imageUrl, // <-- NOVO
     DateTime? completedAt,
     String? completedBy,
     double? latitude,
@@ -122,6 +129,7 @@ class Task {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       photoPath: photoPath ?? this.photoPath,
+      imageUrl: imageUrl ?? this.imageUrl, // <-- NOVO
       completedAt: completedAt ?? this.completedAt,
       completedBy: completedBy ?? this.completedBy,
       latitude: latitude ?? this.latitude,

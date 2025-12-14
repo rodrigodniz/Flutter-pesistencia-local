@@ -6,6 +6,8 @@ import '../services/database_service.dart';
 import '../services/camera_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/location_picker.dart';
+import '../services/media_service.dart';
+import '../services/connectivity_service.dart';
 
 class TaskFormScreen extends StatefulWidget {
   final Task? task;
@@ -141,6 +143,28 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // 1) Tenta upload se ONLINE e se tem foto
+      String? uploadedUrl;
+      final isOnline = ConnectivityService.instance.isOnline;
+
+      if (isOnline && _photoPath != null) {
+        final f = File(_photoPath!);
+        if (await f.exists()) {
+          uploadedUrl = await MediaService().uploadBase64(file: f);
+
+          if (uploadedUrl == null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Falha ao enviar foto. Salvando apenas localmente.',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+
       if (widget.task == null) {
         // NOVA TAREFA
         final now = DateTime.now();
@@ -150,6 +174,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           priority: _priority,
           completed: _completed,
           photoPath: _photoPath,
+          imageUrl: uploadedUrl, // <-- NOVO
           latitude: _latitude,
           longitude: _longitude,
           locationName: _locationName,
@@ -178,6 +203,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           priority: _priority,
           completed: _completed,
           photoPath: _photoPath,
+          imageUrl: uploadedUrl ?? widget.task!.imageUrl, // <-- NOVO
           latitude: _latitude,
           longitude: _longitude,
           locationName: _locationName,

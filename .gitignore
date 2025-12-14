@@ -1,4 +1,6 @@
+# ================================
 # Miscellaneous
+# ================================
 *.class
 *.log
 *.pyc
@@ -12,26 +14,30 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ================================
+# IntelliJ / IDEs
+# ================================
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code (opcional – descomentado para não versionar)
+.vscode/
 
-# Flutter/Dart/Pub related
+# ================================
+# Flutter / Dart / Pub
+# ================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
+.packages
 
 # Symbolication related
 app.*.symbols
@@ -39,7 +45,62 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# ================================
+# Android
+# ================================
+/android/.gradle/
+/android/local.properties
+/android/**/key.properties
+/android/**/keystore.jks
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ================================
+# iOS / macOS
+# ================================
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# ================================
+# Windows Flutter
+# ================================
+windows/flutter/ephemeral/
+
+# ================================
+# Node.js / Backend
+# ================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de ambiente
+.env
+
+# ================================
+# Docker / LocalStack
+# ================================
+infra/localstack-data/
+**/localstack-data/
+.docker/
+
+# ================================
+# Banco de dados local (SQLite)
+# ================================
+*.db
+*.db-journal
+
+# ================================
+# Temporários
+# ================================
+tmp/
+temp/
+
+# ================================
+# Sistema Operacional
+# ================================
+Thumbs.db

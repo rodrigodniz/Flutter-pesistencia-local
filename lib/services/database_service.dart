@@ -22,7 +22,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 6, // <-- era 5
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -39,6 +39,7 @@ class DatabaseService {
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
         photoPath TEXT,
+        imageUrl TEXT, -- <-- NOVO
         completedAt TEXT,
         completedBy TEXT,
         latitude REAL,
@@ -50,7 +51,7 @@ class DatabaseService {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Versões antigas podem não ter updatedAt/isSynced
+    // Se veio de versões antigas
     if (oldVersion < 5) {
       await db.execute('ALTER TABLE tasks ADD COLUMN updatedAt TEXT');
       await db.execute(
@@ -59,6 +60,11 @@ class DatabaseService {
       await db.execute(
         'UPDATE tasks SET updatedAt = createdAt WHERE updatedAt IS NULL',
       );
+    }
+
+    // Nova coluna do S3
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE tasks ADD COLUMN imageUrl TEXT');
     }
   }
 
