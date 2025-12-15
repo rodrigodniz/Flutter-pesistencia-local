@@ -163,3 +163,43 @@ Responsável por receber uma imagem em Base64 e armazená-la no S3 local.
 
 Rodar script "evidencias.ps1" presente na raiz do projeto 
 
+=== 0) PrÃ©-requisitos ===
+OK: Docker / Node / NPM disponÃ­veis
+
+=== 1) Subindo LocalStack (S3 simulado) ===
+time="2025-12-15T17:35:59-03:00" level=warning msg="C:\\Users\\Cliente\\Documents\\Persistencia flutter\\task_manager\\infra\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container localstack  Running
+OK: Container localstack estÃ¡ rodando
+
+=== 2) Validando bucket S3 (LocalStack) ===
+2025-12-15 20:35:29 shopping-images
+OK: Bucket 'shopping-images' existe
+
+Objetos ANTES do upload:
+
+=== 3) Subindo backend (Media Service) ===
+OK: Abrindo Media Service em uma nova janela (mantÃ©m rodando)
+OK: Backend iniciado (ver janela do Node para logs)
+
+=== 4) Upload automÃ¡tico (usando imagem de evidÃªncia na raiz) ===
+OK: Arquivo encontrado: C:\Users\Cliente\Documents\Persistencia flutter\task_manager\evidencia.png
+OK: Upload concluÃ­do
+
+Retorno do backend:
+
+
+message : Imagem enviada com sucesso!
+bucket  : shopping-images
+key     : evidencia_20251215_173612.png
+url     : http://localhost:4566/shopping-images/evidencia_20251215_173612.png
+
+
+
+
+Objetos DEPOIS do upload:
+2025-12-15 20:36:12       8460 evidencia_20251215_173612.png
+
+URL do objeto (opcional abrir no navegador):
+http://localhost:4566/shopping-images/evidencia_20251215_173612.png
+
+[Done] exited with code=0 in 15.867 seconds
